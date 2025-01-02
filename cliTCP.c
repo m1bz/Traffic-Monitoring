@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Bun venit! Ați intrat în sistemul Wish GPS. Pentru a afla comenzile disponibile, tastați help.\n");
-    printf("Vă rog pentru prima dată să introduceți tipul de drum, numele acestuia și numărul markerului pe care l-ați depășit cel mai recent:\n");
+    printf("Pentru a va localiza va rog sa scrieti locatie urmat de numele drumului și numărul markerului de drum pe care l-ați depășit cel mai recent:\n");
 
     // Creăm thread-ul pentru citire asincronă de la server
     pthread_t tid;
@@ -128,7 +128,6 @@ int main(int argc, char *argv[]) {
         printf("Comanda trimisă. Aștept răspuns...\n");
     }
 
-    // Oprirea conexiunii și a thread-ului
     close(sd);
     running = 0; 
     pthread_join(tid, NULL);

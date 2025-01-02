@@ -17,92 +17,36 @@
 int clients[MAX_CLIENTS];
 int client_count = 0;
 pthread_mutex_t clients_lock = PTHREAD_MUTEX_INITIALIZER;
+
+// Mutex pentru baza de date
+pthread_mutex_t db_lock = PTHREAD_MUTEX_INITIALIZER;
+
 sqlite3 *db;
 
-// Function to check SQLite errors
-void check_sqlite(int rc, const char *message)
-{
-    if (rc != SQLITE_OK)
-    {
-        fprintf(stderr, "Error %s: %s\n", message, sqlite3_errmsg(db));
-        sqlite3_close(db);
-        exit(1);
-    }
+// Function to lock/unlock DB
+void lock_db() {
+    pthread_mutex_lock(&db_lock);
 }
 
-// Initialize database and create tables
-void initialize_database()
-{
-    int rc = sqlite3_open("trafic.db", &db);
-    check_sqlite(rc, "opening database");
-
-    const char *sql_create_tables =
-        "CREATE TABLE IF NOT EXISTS Drumuri ("
-        "  Name TEXT PRIMARY KEY, "
-        "  Type TEXT, "
-        "  Neighbours TEXT, "
-        "  IntersectionPointNeighbour INTEGER, "
-        "  TotalKms INTEGER, "
-        "  GasStation TEXT, "
-        "  Crashes TEXT, "
-        "  Weather TEXT"
-        ");"
-        "CREATE TABLE IF NOT EXISTS Clienti ("
-        "  clientid INTEGER PRIMARY KEY, "
-        "  NameRoad TEXT, "
-        "  LocationKm INTEGER,"
-        "  Direction INTEGER "
-        ");";
-
-    rc = sqlite3_exec(db, sql_create_tables, 0, 0, 0);
-    check_sqlite(rc, "creating tables");
-
-    printf("Database initialized successfully.\n");
+void unlock_db() {
+    pthread_mutex_unlock(&db_lock);
 }
 
-// Function to process client commands and interact with the database
+void check_sqlite(int rc, const char *message);
+void initialize_database();
+char *get_nth_word(const char *input, int n);
+char *check_bd_insert(const char *message, char *response);
+char *insert_bd(const char *message, char *response);
+
 void process_client_message(const char *message, char *response)
 {
-    const char *insert_sql = "INSERT INTO Drumuri (Name, Type, Neighbours, TotalKms, GasStation) VALUES (?, ?, ?, ?, ?)";
-    const char *select_sql = "SELECT * FROM Drumuri";
-    sqlite3_stmt *stmt;
-
-    if (strstr(message, "insert_drum") != NULL)
+    if (strstr(message, "locatie") != NULL)
     {
-        // Inserare
-        int rc = sqlite3_prepare_v2(db, insert_sql, -1, &stmt, 0);
-        if (rc == SQLITE_OK)
-        {
-            sqlite3_bind_text(stmt, 1, "Drum Test", -1, SQLITE_STATIC);
-            sqlite3_bind_text(stmt, 2, "Autostrada", -1, SQLITE_STATIC);
-            sqlite3_bind_text(stmt, 3, "Vecin1, Vecin2", -1, SQLITE_STATIC);
-            sqlite3_bind_int(stmt, 4, 300);
-            sqlite3_bind_text(stmt, 5, "OMV", -1, SQLITE_STATIC);
-
-            if (sqlite3_step(stmt) == SQLITE_DONE)
-            {
-                printf("Drum adăugat cu succes.\n");
-            }
-            else
-            {
-                printf("Eroare la adăugare: %s\n", sqlite3_errmsg(db));
-            }
-        }
-        sqlite3_finalize(stmt); // Finalizezi după fiecare statement
-
-        // Afișare
-        rc = sqlite3_prepare_v2(db, select_sql, -1, &stmt, 0);
-        if (rc == SQLITE_OK)
-        {
-            while (sqlite3_step(stmt) == SQLITE_ROW)
-            {
-                const char *nume = (const char *)sqlite3_column_text(stmt, 0);
-                const char *tip = (const char *)sqlite3_column_text(stmt, 1);
-                printf("Drum: %s, Tip: %s\n", nume, tip);
-            }
-        }
-        sqlite3_finalize(stmt); // Finalizezi după utilizarea statement-ului
-        snprintf(response, BUFFER_SIZE, "Drum adăugat cu succes.\n");
+        check_bd_insert(message, response);
+    }
+    else if (strstr(message, "insert_drum") != NULL)
+    {
+        insert_bd(message, response);
     }
     else if (strstr(message, "exit") != NULL)
     {
@@ -224,4 +168,190 @@ int main()
     sqlite3_close(db);
     close(server_socket);
     return 0;
+}
+
+char *get_nth_word(const char *input, int n)
+{
+    if (input == NULL || n <= 0)
+    {
+        return NULL;
+    }
+
+    char *input_copy = strdup(input);
+    if (input_copy == NULL)
+    {
+        perror("Allocation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    char *token = strtok(input_copy, " ");
+    int word_count = 1;
+
+    while (token != NULL)
+    {
+        if (word_count == n)
+        {
+            char *nth_word = strdup(token);
+            free(input_copy);
+            return nth_word;
+        }
+        token = strtok(NULL, " ");
+        word_count++;
+    }
+
+    free(input_copy);
+    return NULL;
+}
+
+void initialize_database()
+{
+    // Deschidem baza de date
+    int rc = sqlite3_open("trafic.db", &db);
+    check_sqlite(rc, "opening database");
+
+    // Cream tabelele
+    const char *sql_create_tables =
+        "CREATE TABLE IF NOT EXISTS Drumuri ("
+        "  Name TEXT PRIMARY KEY, "
+        "  Type TEXT, "
+        "  Neighbours TEXT, "
+        "  IntersectionPointNeighbour INTEGER, "
+        "  TotalKms INTEGER, "
+        "  GasStation TEXT, "
+        "  Crashes TEXT, "
+        "  Weather TEXT"
+        ");"
+        "CREATE TABLE IF NOT EXISTS Clienti ("
+        "  clientid INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "  NameRoad TEXT, "
+        "  LocationKm INTEGER,"
+        "  Direction INTEGER "
+        ");";
+
+    rc = sqlite3_exec(db, sql_create_tables, 0, 0, NULL);
+    check_sqlite(rc, "creating tables");
+
+    printf("Database initialized successfully.\n");
+}
+
+char *check_bd_insert(const char *message, char *response)
+{
+    lock_db();  // Închidem lacătul pe BD
+    sqlite3_stmt *stmt;
+    const char *select_sql = "SELECT Name FROM Drumuri";
+
+    int rc = sqlite3_prepare_v2(db, select_sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK)
+    {
+        snprintf(response, BUFFER_SIZE, "SQL error preparing statement: %s\n", sqlite3_errmsg(db));
+        unlock_db();
+        return response;
+    }
+
+    // Obținem cuvântul 2 din message (numele drumului pe care-l căutăm)
+    char *road_name = get_nth_word(message, 2);
+    if (!road_name)
+    {
+        snprintf(response, BUFFER_SIZE, "Nu ai trimis un nume de drum.\n");
+        sqlite3_finalize(stmt);
+        unlock_db();
+        return response;
+    }
+
+    int check = 0;
+    // Parcurgem rezultatele
+    while (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        const char *nume = (const char *)sqlite3_column_text(stmt, 0);
+        // Comparam corect conținutul
+        if (strcmp(nume, road_name) == 0)
+        {
+            check = 1;
+            break;
+        }
+    }
+    sqlite3_finalize(stmt);
+    free(road_name); // eliberăm memorie, get_nth_word returnează strdup
+
+    if (check == 1)
+    {
+        snprintf(response, BUFFER_SIZE, "V-am gasit locatia!\n");
+    }
+    else
+    {
+        snprintf(response, BUFFER_SIZE,
+                 "Nu v-am gasit locatia in baza noastra de date. "
+                 "Va rog inserati astfel: insert_drum <nume_drum> <tip_drum>.\n");
+    }
+
+    unlock_db();  // Eliberăm lacătul pe BD
+    return response;
+}
+
+char *insert_bd(const char *message, char *response)
+{
+    lock_db();  // Închidem lacătul pe BD
+
+    // Obținem parametrii 2 și 3 din mesaj
+    char *road_name = get_nth_word(message, 2);
+    char *road_type = get_nth_word(message, 3);
+
+    if (!road_name || !road_type)
+    {
+        snprintf(response, BUFFER_SIZE, "Parametri insuficienti. Folositi: insert_drum <nume> <tip>.\n");
+        if (road_name) free(road_name);
+        if (road_type) free(road_type);
+        unlock_db();
+        return response;
+    }
+
+    const char *insert_sql = 
+        "INSERT INTO Drumuri (Name, Type, Neighbours, TotalKms, GasStation) "
+        "VALUES (?, ?, ?, ?, ?)";
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db, insert_sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK)
+    {
+        snprintf(response, BUFFER_SIZE, "SQL error preparing statement: %s\n", sqlite3_errmsg(db));
+        free(road_name);
+        free(road_type);
+        unlock_db();
+        return response;
+    }
+
+    // Legăm parametrii folosind SQLITE_TRANSIENT, astfel SQLite își face singur copie
+    sqlite3_bind_text(stmt, 1, road_name, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, road_type, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, "vedem", -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 4, 3);
+    sqlite3_bind_text(stmt, 5, "mara", -1, SQLITE_TRANSIENT);
+
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_DONE)
+    {
+        snprintf(response, BUFFER_SIZE, "Drum adăugat cu succes.\n");
+    }
+    else
+    {
+        snprintf(response, BUFFER_SIZE, "Eroare la adăugare: %s\n", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+    free(road_name);
+    free(road_type);
+
+    unlock_db();  // Eliberăm lacătul pe BD
+    return response;
+}
+
+
+void check_sqlite(int rc, const char *message)
+{
+    if (rc != SQLITE_OK)
+    {
+        fprintf(stderr, "Error %s: %s\n", message, sqlite3_errmsg(db));
+        sqlite3_close(db);
+        exit(1);
+    }
 }
