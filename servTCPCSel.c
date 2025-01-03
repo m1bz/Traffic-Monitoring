@@ -14,11 +14,18 @@
 #define MAX_CLIENTS 100
 
 // Global variables
+char  weather[5][10] = {"sunny", "rainy", "foggy", "snowy", "windy"};
+char  road_type[3][10] = {"autostrada", "drum", "oras"};
 int clients[MAX_CLIENTS];
 int client_count = 0;
-pthread_mutex_t clients_lock = PTHREAD_MUTEX_INITIALIZER;
 
-// Mutex pentru baza de date
+typedef struct {
+    char *name;
+    int km;
+}Neighbour;
+
+
+pthread_mutex_t clients_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t db_lock = PTHREAD_MUTEX_INITIALIZER;
 
 sqlite3 *db;
@@ -37,6 +44,10 @@ void initialize_database();
 char *get_nth_word(const char *input, int n);
 char *check_bd_insert(const char *message, char *response);
 char *insert_bd(const char *message, char *response);
+int generatekm(char *message);
+Neighbour get_avaible_neighbour_db();
+char *check_bd_neighbour();
+int min(int a, int b);
 
 void process_client_message(const char *message, char *response)
 {
@@ -215,10 +226,11 @@ void initialize_database()
         "  Name TEXT PRIMARY KEY, "
         "  Type TEXT, "
         "  Neighbours TEXT, "
-        "  IntersectionPointNeighbour INTEGER, "
+        "  IntersectionPointNeighbour TEXT, "
+        "  NeighbourNumber INTEGER, "
         "  TotalKms INTEGER, "
-        "  GasStation TEXT, "
-        "  Crashes TEXT, "
+        "  GasStation INTEGER, "
+        "  Crashes INTEGER, "
         "  Weather TEXT"
         ");"
         "CREATE TABLE IF NOT EXISTS Clienti ("
@@ -306,8 +318,9 @@ char *insert_bd(const char *message, char *response)
     }
 
     const char *insert_sql = 
-        "INSERT INTO Drumuri (Name, Type, Neighbours, TotalKms, GasStation) "
-        "VALUES (?, ?, ?, ?, ?)";
+        "INSERT INTO Drumuri (Name, Type, Neighbours, IntersectionPointNeighbour, NeighbourNumber, TotalKms, GasStation, Crashes, Weather) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    const char * update_sql =
 
     sqlite3_stmt *stmt;
     int rc = sqlite3_prepare_v2(db, insert_sql, -1, &stmt, NULL);
@@ -319,13 +332,19 @@ char *insert_bd(const char *message, char *response)
         unlock_db();
         return response;
     }
-
+    int km = generatekm(road_type), neighborkm;
+    Neighbour n = get_avaible_neighbour_db();
     // Legăm parametrii folosind SQLITE_TRANSIENT, astfel SQLite își face singur copie
-    sqlite3_bind_text(stmt, 1, road_name, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, road_type, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, "vedem", -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 4, 3);
-    sqlite3_bind_text(stmt, 5, "mara", -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 1, road_name, -1, SQLITE_TRANSIENT); // nume
+    sqlite3_bind_text(stmt, 2, road_type, -1, SQLITE_TRANSIENT); // tip
+    sqlite3_bind_text(stmt, 3, n.name, -1, SQLITE_TRANSIENT); // vecini
+    sqlite3_bind_int(stmt, 4, rand() %min(n.km,km), -1, SQLITE_TRANSIENT); // nodul intersectie cu vecini
+    // am adaugat vecini pentru drumul pe care il inserez, mai trb sa adaug si pentru drumul care se va invecina acum cu el
+    sqlite3_bind_int(stmt, 5, 1); // numar vecini totali
+    sqlite3_bind_text(stmt, 6, km); // total km drum
+    sqlite3_bind_int(stmt, 7, rand() % km); // benzinarie
+    sqlite3_bind_text(stmt, 8, 0); // accidente
+    sqlite3_bind_text(stmt, 9, weather[rand() % 5], -1, SQLITE_TRANSIENT); //vreme
 
     rc = sqlite3_step(stmt);
     if (rc == SQLITE_DONE)
@@ -341,7 +360,7 @@ char *insert_bd(const char *message, char *response)
     free(road_name);
     free(road_type);
 
-    unlock_db();  // Eliberăm lacătul pe BD
+    unlock_db(); 
     return response;
 }
 
@@ -354,4 +373,66 @@ void check_sqlite(int rc, const char *message)
         sqlite3_close(db);
         exit(1);
     }
+}
+
+int generatekm(char *message)
+{
+    int km = 0;
+    if (strcmp(message, "autostrada") == 0)
+    {
+        km = rand() % 75 + 200;
+    }
+    else if (strcmp(message, "drum") == 0)
+    {
+        km = rand() % 75 + 100;
+    }
+    else if (strcmp(message, "oras") == 0)
+    {
+        km = rand() % 50 + 75;
+    }
+    return km;
+}
+
+
+Neighbour get_avaible_neighbour_db()
+{
+     lock_db();
+    sqlite3_stmt *stmt;
+    const char *select_sql = "SELECT Name, Type, NeighbourNumber FROM Drumuri";
+
+    int rc = sqlite3_prepare_v2(db, select_sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK)
+        unlock_db();
+
+    int i;
+    while (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        i=0;
+        const char *nume = (const char *)sqlite3_column_text(stmt, 0);
+        const char *tip = (const char *)sqlite3_column_text(stmt, 1);
+        int nrneighbours = sqlite3_column_int(stmt, 5);
+        while(i<3)
+        {
+            if((strcmp(tip, road_type[i])==0) && nrneighbours <= i+1)
+            {
+                Neighbour n;
+                n.name = nume;
+                n.km = sqlite3_column_int(stmt, 6);
+                sqlite3_finalize(stmt);
+                unlock_db();
+                return n;
+            }
+            i++;
+        }
+    }
+}
+
+
+int min(int a, int b)
+{
+    if(a<b)
+    {
+        return a;
+    }
+    return b;
 }
