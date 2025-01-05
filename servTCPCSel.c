@@ -15,7 +15,6 @@
 
 // Global variables
 char  weather[5][10] = {"sunny", "rainy", "foggy", "snowy", "windy"};
-char  road_type[3][10] = {"autostrada", "drum", "oras"};
 int clients[MAX_CLIENTS];
 int client_count = 0;
 
@@ -202,8 +201,7 @@ Formation_neighbour Formate(const char *old_neighbours,const char *old_intersect
     fn.intersectionpointneighbours = NULL;
 
     // 1) Spargem vechile neighbours
-    // --------------------------------------------------------
-    // să aflăm cîte drumuri aveam
+
     int count = 0;
     char *temp_neigh = strdup(old_neighbours ? old_neighbours : "");
     char *temp_inters = strdup(old_intersections ? old_intersections : "");
@@ -235,14 +233,13 @@ Formation_neighbour Formate(const char *old_neighbours,const char *old_intersect
     }
 
     // 2) Adăugăm noul element (drum + intersection)
-    // --------------------------------------------------------
+
     name_array[count] = strdup(new_name);
     int_ptrs[count]   = new_intersection;
     count++;
 
     // 3) Sortăm crescător după intersectionpoint
-    // --------------------------------------------------------
-    // bubble sort / insertion sort / etc., exemplu simplu bubble:
+
     for(int pass = 0; pass < count - 1; pass++) {
         for(int j = 0; j < count - pass - 1; j++) {
             if(int_ptrs[j] > int_ptrs[j+1]) {
@@ -259,8 +256,7 @@ Formation_neighbour Formate(const char *old_neighbours,const char *old_intersect
     }
 
     // 4) Reconstruim string-urile finale
-    // --------------------------------------------------------
-    // neighbours
+
     size_t final_size = 0;
     for(int k = 0; k < count; k++) {
         final_size += strlen(name_array[k]) + 2; // spatiu + \0
@@ -288,7 +284,7 @@ Formation_neighbour Formate(const char *old_neighbours,const char *old_intersect
     fn.intersectionpointneighbours = strdup(final_inters_str);
 
     // 5) Curățăm memoria
-    // --------------------------------------------------------
+
     for(int k = 0; k < count; k++) {
         free(name_array[k]);
     }
@@ -466,13 +462,11 @@ char *insert_bd(const char *message, char *response)
         }
 
         // 5) Inserez noul drum cu un (1) vecin: n.name
-        //    Trebuie să aleg intersection point random
+
         int kmNew = generatekm(road_type_str);
         int intersection = rand() % min(n.km, kmNew);
 
-        // Pentru a insersa corect, trebuie să știu și neighbours + intersectionpoint
-        // = "n.name" și intersection
-        // cum e doar 1, totul e direct
+
         char intersection_str[32];
         sprintf(intersection_str, "%d", intersection);
 
@@ -497,7 +491,6 @@ char *insert_bd(const char *message, char *response)
         int old_nb_number = 0;
 
         {
-            // Îi citesc datele direct din DB
             sqlite3_stmt *stmt_old;
             const char *sel_sql =
               "SELECT Neighbours, IntersectionPointNeighbour, NeighbourNumber "
@@ -520,11 +513,7 @@ char *insert_bd(const char *message, char *response)
         }
 
         // Construiesc noile stringuri (neighbours + intersection) cu function "Formate"
-        Formation_neighbour fn = Formate(old_neighbours,
-                                         old_inters,
-                                         road_name,     // adaug la vecin și drumul nou creat
-                                         intersection); // intersection point comun
-        // no. neighbours
+        Formation_neighbour fn = Formate(old_neighbours,old_inters,road_name,intersection); 
         int new_nb_number = old_nb_number + 1;
 
         // 7) Fac UPDATE la drumului vecin
@@ -548,7 +537,7 @@ char *insert_bd(const char *message, char *response)
                  road_name, n.name);
 
         // Curăț memorie
-        free(n.name);   // alocat cu strdup în get_avaible_neighbour_db()
+        free(n.name);   
         free(road_name);
         free(road_type_str);
         free(fn.neighbours);
