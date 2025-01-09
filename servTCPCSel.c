@@ -187,6 +187,14 @@ int generatekm(const char *type)
     return km;
 }
 
+int generatespeed(const char *type){
+    if (strcmp(type, "autostrada") == 0)
+        return 130;
+    else if (strcmp(type, "drum") == 0)
+        return 90;
+    else if (strcmp(type, "oras") == 0)
+        return 50;
+}
 
 int min(int a, int b)
 {
@@ -572,7 +580,7 @@ void initialize_database()
         "  clientid INTEGER PRIMARY KEY AUTOINCREMENT, "
         "  NameRoad TEXT, "
         "  LocationKm INTEGER,"
-        "  Direction INTEGER "
+        "  Speed INTEGER "
         ");";
 
     rc = sqlite3_exec(db, sql_create_tables, 0, 0, NULL);
