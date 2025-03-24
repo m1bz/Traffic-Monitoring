@@ -1,79 +1,97 @@
-GPS Client-Server Simulation
+Traffic Management Application (Wish GPS)
 
-This project implements a client-server system for simulating a GPS-based road management application. The server maintains a SQLite database containing information about roads, their characteristics, and connections. Clients can connect to the server to query their location, add new roads, and interact through defined commands.
+Overview
+--------
+This project implements a client-server traffic management application using sockets, pthreads, and SQLite3 in C. It allows clients to manage and interact with a database of roads, track locations, and dynamically insert new roads into the database.
 
- Overview
+Components
+----------
+1. Server:
+   - Handles multiple client connections concurrently using threads.
+   - Stores road information persistently in an SQLite3 database (trafic.db).
+   - Manages road details such as neighbors, intersections, distances, gas stations, crashes, and weather conditions.
 
-  Server:
-  - Handles multiple concurrent client connections using multithreading.
-  - Stores data in an SQLite database (`trafic.db`).
-  - Manages road networks, weather conditions, intersections, and additional road properties.
+2. Client:
+   - Connects to the server to send commands and receive responses.
+   - Provides an interactive interface for querying locations or inserting new road information.
 
-  Client:
-  - Connects to the server via TCP sockets.
-  - Sends commands to interact with the road network database.
-  - Receives real-time updates and responses from the server asynchronously.
+Features
+--------
+- Multithreaded server to handle simultaneous client connections.
+- SQLite3 database for persistent storage of road data.
+- Automatic generation of road attributes including distance, speed limit, and intersections.
+- Dynamic insertion and neighbor assignment for roads.
+- Basic command interface supporting operations such as inserting roads and locating positions.
 
-  Technologies Used
+Technologies Used
+-----------------
+- C Programming Language
+- POSIX Sockets
+- Multithreading (pthreads)
+- SQLite3 Database
+- Compatible with Linux/macOS operating systems
 
-- Programming Language: C
-- Database: SQLite
-- Networking: POSIX sockets (TCP)
-- Concurrency: pthreads (multithreading)
+Prerequisites
+-------------
+Before compiling, ensure the following packages are installed:
 
-  Project Structure
+- SQLite3 development libraries:
+  sudo apt-get install libsqlite3-dev
 
+- GCC Compiler:
+  sudo apt-get install build-essential
 
-project-root/
-├── client.c       # Client-side code for user interaction and communication
-├── server.c       # Server-side code for handling client requests
-├── trafic.db      # SQLite database storing road and client data
-└── Makefile       # Compilation instructions
+Compilation Instructions
+------------------------
+Compile the server:
+  gcc server.c -o server -lpthread -lsqlite3
 
+Compile the client:
+  gcc client.c -o client -lpthread
 
-  Features
+Usage Instructions
+------------------
+Start the Server:
+  ./server
 
-  Server Features
+Start the Client:
+  ./client <server_ip> 2728
 
-- Maintains road network details, including:
-  - Road type (highway, road, city street)
-  - Total kilometers, intersections, gas stations
-  - Real-time weather conditions (sunny, rainy, foggy, snowy, windy)
-- Dynamically updates road connections and intersection points.
-- Allows new roads to be added with automatic connection handling.
+Example:
+  ./client 127.0.0.1 2728
 
-  Client Features
+Client Commands
+---------------
+- Locate current position on a road:
+  locatie <road_name>
 
-- User-friendly command-based interaction:
-  - `locatie <road_name>`: Checks if a road exists in the database.
-  - `insert_drum <road_name> <type>`: Adds a new road to the network.
-  - `exit`: Closes the connection gracefully.
-- Asynchronous handling of server messages using threads.
+- Insert a new road into the database:
+  insert_drum <road_name> <road_type>
 
+  Available road types:
+  - autostrada
+  - drum
+  - oras
 
+- Exit the application:
+  exit
 
-  Database Schema
+Database Structure
+------------------
+Table: Drumuri
 
-  Drumuri (Roads)
+| Field                         | Type           | Description                                  |
+|-------------------------------|----------------|----------------------------------------------|
+| Name                          | TEXT (Primary) | Road name                                    |
+| Type                          | TEXT           | Road type (autostrada, drum, oras)           |
+| Neighbours                    | TEXT           | Neighbor roads (space-separated)             |
+| IntersectionPointNeighbour    | TEXT           | Intersection points (space-separated integers)|
+| NeighbourNumber               | INTEGER        | Number of neighbors                          |
+| TotalKms                      | INTEGER        | Total length of the road (km)                |
+| GasStation                    | INTEGER        | Location of gas station (km marker)          |
+| Crashes                       | INTEGER        | Number of crashes recorded                   |
+| Weather                       | TEXT           | Current weather condition                    |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| Name | TEXT | Road name (primary key) |
-| Type | TEXT | Type of road (autostrada, drum, oras) |
-| Neighbours | TEXT | Neighbor roads separated by spaces |
-| IntersectionPointNeighbour | TEXT | Intersection points separated by spaces |
-| NeighbourNumber | INTEGER | Number of neighboring roads |
-| TotalKms | INTEGER | Total length of the road in kilometers |
-| GasStation | INTEGER | Kilometer marker of a gas station |
-| Crashes | INTEGER | Number of accidents recorded |
-| Weather | TEXT | Current weather condition |
-
-  Clienti (Clients)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| clientid | INTEGER | Auto-incremented client identifier |
-| NameRoad | TEXT | Road name where client is located |
-| LocationKm | INTEGER | Kilometer marker location of the client |
-| Speed | INTEGER | Speed of the client vehicle |
-
+Contact
+-------
+For additional information or support, please contact the project maintainer.
