@@ -1,97 +1,117 @@
-Traffic Management Application (Wish GPS)
+Wish GPS - Road Information and Client Tracking System
+======================================================
 
-Overview
---------
-This project implements a client-server traffic management application using sockets, pthreads, and SQLite3 in C. It allows clients to manage and interact with a database of roads, track locations, and dynamically insert new roads into the database.
+Description
+-----------
+Wish GPS is a multi-threaded client-server application designed to simulate a real-time road information and vehicle tracking system. The server maintains a database of roads, traffic conditions, accidents, weather reports, and provides personalized updates to clients regarding speed recommendations, gas station locations, and sports news.
 
-Components
-----------
-1. Server:
-   - Handles multiple client connections concurrently using threads.
-   - Stores road information persistently in an SQLite3 database (trafic.db).
-   - Manages road details such as neighbors, intersections, distances, gas stations, crashes, and weather conditions.
-
-2. Client:
-   - Connects to the server to send commands and receive responses.
-   - Provides an interactive interface for querying locations or inserting new road information.
+This application allows clients to interactively report their location, current speed, and request various real-time data.
 
 Features
 --------
-- Multithreaded server to handle simultaneous client connections.
-- SQLite3 database for persistent storage of road data.
-- Automatic generation of road attributes including distance, speed limit, and intersections.
-- Dynamic insertion and neighbor assignment for roads.
-- Basic command interface supporting operations such as inserting roads and locating positions.
+- Real-Time Traffic Information: Clients receive updates on nearby accidents, recommended speeds, and weather conditions.
+- Accident Reporting: Clients can report accidents, triggering alerts to all affected users within proximity.
+- Gas Station Locator: Provides information about the nearest gas stations and current fuel prices.
+- Sports Updates: Randomly generated sports news provided for entertainment.
+- Road Management: Add and manage roads dynamically within the system.
+- Client Location Tracking: Clients provide their current location, allowing personalized feedback.
 
-Technologies Used
+Project Structure
 -----------------
-- C Programming Language
-- POSIX Sockets
-- Multithreading (pthreads)
-- SQLite3 Database
-- Compatible with Linux/macOS operating systems
+project/
+├── server.c
+├── client.c
+├── trafic.db (automatically generated SQLite database)
+└── README.txt
 
-Prerequisites
--------------
-Before compiling, ensure the following packages are installed:
+Requirements
+------------
+- Linux Operating System
+- GCC Compiler
+- SQLite3 Library (development headers required)
+- POSIX Threads (pthread)
 
-- SQLite3 development libraries:
-  sudo apt-get install libsqlite3-dev
+Installation
+------------
+1. Ensure you have SQLite3 and pthread libraries installed. On Debian-based systems, use:
+   sudo apt install sqlite3 libsqlite3-dev build-essential
 
-- GCC Compiler:
-  sudo apt-get install build-essential
+2. Compile the Server:
+   gcc server.c -o server -lsqlite3 -lpthread
 
-Compilation Instructions
-------------------------
-Compile the server:
-  gcc server.c -o server -lpthread -lsqlite3
+3. Compile the Client:
+   gcc client.c -o client -lpthread
 
-Compile the client:
-  gcc client.c -o client -lpthread
+Running the Application
+-----------------------
+Starting the Server:
+./server
 
-Usage Instructions
-------------------
-Start the Server:
-  ./server
-
-Start the Client:
-  ./client <server_ip> 2728
+Starting Clients:
+./client <server_ip> <port>
 
 Example:
-  ./client 127.0.0.1 2728
+./client 127.0.0.1 2728
 
-Client Commands
+Commands Available to Clients
+-----------------------------
+- locatie <road_name> <km_marker> <speed>  
+  Sets your current location and speed.
+- accident  
+  Reports an accident at your current location.
+- viteza <speed>  
+  Updates your current driving speed.
+- insert_drum <road_name> <road_type>  
+  Adds a new road to the database. Types: autostrada, drum, oras.
+- show_drums  
+  Lists all roads in the system.
+- CL#ARCR4SH  
+  Clears all accident reports from the system.
+- gas  
+  Provides distance to the nearest gas station and current fuel prices.
+- weather  
+  Displays weather conditions for your current road.
+- sports  
+  Shows a random sports news headline.
+- AllInfo  
+  Combines gas, weather, and sports information into one report.
+- help  
+  Shows this list of available commands.
+- exit  
+  Disconnects from the server.
+
+Usage Example
+-------------
+1. Connect to the server:
+   ./client 127.0.0.1 2728
+
+2. Register your current location and speed:
+   locatie DN1 35 80
+
+3. Report an accident:
+   accident
+
+4. Request gas station information:
+   gas
+
+Database Schema (SQLite)
+------------------------
+Drumuri Table:
+Name (PK) | Type | Neighbours | IntersectionPointNeighbour | NeighbourNumber | TotalKms | GasStation | GasPrices | Crashes | Weather | Speed
+
+Clienti Table:
+clientid (PK) | NameRoad | LocationKm | Speed | GasInfo | WeatherInfo | SportsInfo
+
+Technical Notes
 ---------------
-- Locate current position on a road:
-  locatie <road_name>
+- Server handles multiple client connections using POSIX threads.
+- All database operations are thread-safe, managed via mutex locks.
+- Client application employs asynchronous reads to remain responsive to server updates.
 
-- Insert a new road into the database:
-  insert_drum <road_name> <road_type>
-
-  Available road types:
-  - autostrada
-  - drum
-  - oras
-
-- Exit the application:
-  exit
-
-Database Structure
-------------------
-Table: Drumuri
-
-| Field                         | Type           | Description                                  |
-|-------------------------------|----------------|----------------------------------------------|
-| Name                          | TEXT (Primary) | Road name                                    |
-| Type                          | TEXT           | Road type (autostrada, drum, oras)           |
-| Neighbours                    | TEXT           | Neighbor roads (space-separated)             |
-| IntersectionPointNeighbour    | TEXT           | Intersection points (space-separated integers)|
-| NeighbourNumber               | INTEGER        | Number of neighbors                          |
-| TotalKms                      | INTEGER        | Total length of the road (km)                |
-| GasStation                    | INTEGER        | Location of gas station (km marker)          |
-| Crashes                       | INTEGER        | Number of crashes recorded                   |
-| Weather                       | TEXT           | Current weather condition                    |
-
-Contact
+Authors
 -------
-For additional information or support, please contact the project maintainer.
+Developed for academic and educational purposes.
+
+License
+-------
+This project is provided under the MIT License. You are free to modify and distribute with attribution.
