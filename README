@@ -1,12 +1,140 @@
-Monitorizarea traficului
+# Wish GPS Client-Server Simulation
 
-Descriere: Implementati un sistem care va fi capabil sa gestioneze traficul si sa ofere informatii virtuale soferilor. Soferii vor putea de asemenea sa raporteze incidente din trafic spre sistem. Apoi aceste update-uri vor fi trimise catre toti participantii la trafic. Fiecare masina va trimite automat catre sistem informatii despre viteza cu care circula. Apoi, sistemul va notifica fiecare sofer despre anumite restrictii de viteza ( eventual datorita unui blocaj in trafic) De asemenea, fiecare sofer va putea sa se inscrie sa primeasca informatii despre vreme, evenimente sportive, preturi pentru combustibili la statiile peco.
-Indicatii:
-Actori: Un sistem server ce asteapta conexiuni. Mai multe conexiuni din partea de client.
+This project implements a client-server system for simulating a GPS-based road management application. The server maintains a SQLite database containing information about roads, their characteristics, and connections. Clients can connect to the server to query their location, add new roads, and interact through defined commands.
 
-    Activitati:
-    trimite informatii dinspre server catre toti clientii despre : viteza cu care trebuie sa circule pe bucata respectiva de drum
-    trimite informatii dinspre server despre vreme, evenimente sportive, preturi pentru combustibili la statiile peco doar celor care au selectat aceste optiuni
-    un client anunta un accident pe Strada Lapusneanu 73, serverul inregistreaza mesajul, il trimite inapoi catre toti clientii
-    toti clientii vor trimite viteza cu care circula in acel moment ( cu o frecventa de 1 min se va face update la informatie )
+## 🚀 Overview
 
+- **Server**:
+  - Handles multiple concurrent client connections using multithreading.
+  - Stores data in an SQLite database (`trafic.db`).
+  - Manages road networks, weather conditions, intersections, and additional road properties.
+
+- **Client**:
+  - Connects to the server via TCP sockets.
+  - Sends commands to interact with the road network database.
+  - Receives real-time updates and responses from the server asynchronously.
+
+## 🛠️ Technologies Used
+
+- **Programming Language**: C
+- **Database**: SQLite
+- **Networking**: POSIX sockets (TCP)
+- **Concurrency**: pthreads (multithreading)
+
+## 📁 Project Structure
+
+```
+project-root/
+├── client.c       # Client-side code for user interaction and communication
+├── server.c       # Server-side code for handling client requests
+├── trafic.db      # SQLite database storing road and client data
+└── Makefile       # Compilation instructions
+```
+
+## 📌 Features
+
+### Server Features
+
+- Maintains road network details, including:
+  - Road type (highway, road, city street)
+  - Total kilometers, intersections, gas stations
+  - Real-time weather conditions (sunny, rainy, foggy, snowy, windy)
+- Dynamically updates road connections and intersection points.
+- Allows new roads to be added with automatic connection handling.
+
+### Client Features
+
+- User-friendly command-based interaction:
+  - `locatie <road_name>`: Checks if a road exists in the database.
+  - `insert_drum <road_name> <type>`: Adds a new road to the network.
+  - `exit`: Closes the connection gracefully.
+- Asynchronous handling of server messages using threads.
+
+## ⚙️ Getting Started
+
+### 📌 Prerequisites
+
+- GCC Compiler
+- SQLite3
+
+### 📥 Installation
+
+Clone the repository and compile:
+
+```bash
+git clone <repository-url>
+cd project-root
+make
+```
+
+### ▶️ Running the Server
+
+Run the server with:
+
+```bash
+./server
+```
+
+### ▶️ Running the Client
+
+Run the client by providing the server IP address and port number:
+
+```bash
+./client <server_address> <port>
+```
+
+Example:
+
+```bash
+./client 127.0.0.1 2728
+```
+
+## 🔧 Commands Usage
+
+- **Check location:**
+  ```bash
+  locatie MainStreet
+  ```
+
+- **Insert new road:**
+  ```bash
+  insert_drum Highway99 autostrada
+  ```
+
+- **Exit client:**
+  ```bash
+  exit
+  ```
+
+## 📊 Database Schema
+
+### Drumuri (Roads)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Name | TEXT | Road name (primary key) |
+| Type | TEXT | Type of road (autostrada, drum, oras) |
+| Neighbours | TEXT | Neighbor roads separated by spaces |
+| IntersectionPointNeighbour | TEXT | Intersection points separated by spaces |
+| NeighbourNumber | INTEGER | Number of neighboring roads |
+| TotalKms | INTEGER | Total length of the road in kilometers |
+| GasStation | INTEGER | Kilometer marker of a gas station |
+| Crashes | INTEGER | Number of accidents recorded |
+| Weather | TEXT | Current weather condition |
+
+### Clienti (Clients)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| clientid | INTEGER | Auto-incremented client identifier |
+| NameRoad | TEXT | Road name where client is located |
+| LocationKm | INTEGER | Kilometer marker location of the client |
+| Speed | INTEGER | Speed of the client vehicle |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request to improve the project.
+
+## 📜 License
+
+This project is open-source under the MIT License.
