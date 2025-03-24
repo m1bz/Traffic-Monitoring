@@ -1,12 +1,97 @@
-Monitorizarea traficului
+Traffic Management Application (Wish GPS)
 
-Descriere: Implementati un sistem care va fi capabil sa gestioneze traficul si sa ofere informatii virtuale soferilor. Soferii vor putea de asemenea sa raporteze incidente din trafic spre sistem. Apoi aceste update-uri vor fi trimise catre toti participantii la trafic. Fiecare masina va trimite automat catre sistem informatii despre viteza cu care circula. Apoi, sistemul va notifica fiecare sofer despre anumite restrictii de viteza ( eventual datorita unui blocaj in trafic) De asemenea, fiecare sofer va putea sa se inscrie sa primeasca informatii despre vreme, evenimente sportive, preturi pentru combustibili la statiile peco.
-Indicatii:
-Actori: Un sistem server ce asteapta conexiuni. Mai multe conexiuni din partea de client.
+Overview
+--------
+This project implements a client-server traffic management application using sockets, pthreads, and SQLite3 in C. It allows clients to manage and interact with a database of roads, track locations, and dynamically insert new roads into the database.
 
-    Activitati:
-    trimite informatii dinspre server catre toti clientii despre : viteza cu care trebuie sa circule pe bucata respectiva de drum
-    trimite informatii dinspre server despre vreme, evenimente sportive, preturi pentru combustibili la statiile peco doar celor care au selectat aceste optiuni
-    un client anunta un accident pe Strada Lapusneanu 73, serverul inregistreaza mesajul, il trimite inapoi catre toti clientii
-    toti clientii vor trimite viteza cu care circula in acel moment ( cu o frecventa de 1 min se va face update la informatie )
+Components
+----------
+1. Server:
+   - Handles multiple client connections concurrently using threads.
+   - Stores road information persistently in an SQLite3 database (trafic.db).
+   - Manages road details such as neighbors, intersections, distances, gas stations, crashes, and weather conditions.
 
+2. Client:
+   - Connects to the server to send commands and receive responses.
+   - Provides an interactive interface for querying locations or inserting new road information.
+
+Features
+--------
+- Multithreaded server to handle simultaneous client connections.
+- SQLite3 database for persistent storage of road data.
+- Automatic generation of road attributes including distance, speed limit, and intersections.
+- Dynamic insertion and neighbor assignment for roads.
+- Basic command interface supporting operations such as inserting roads and locating positions.
+
+Technologies Used
+-----------------
+- C Programming Language
+- POSIX Sockets
+- Multithreading (pthreads)
+- SQLite3 Database
+- Compatible with Linux/macOS operating systems
+
+Prerequisites
+-------------
+Before compiling, ensure the following packages are installed:
+
+- SQLite3 development libraries:
+  sudo apt-get install libsqlite3-dev
+
+- GCC Compiler:
+  sudo apt-get install build-essential
+
+Compilation Instructions
+------------------------
+Compile the server:
+  gcc server.c -o server -lpthread -lsqlite3
+
+Compile the client:
+  gcc client.c -o client -lpthread
+
+Usage Instructions
+------------------
+Start the Server:
+  ./server
+
+Start the Client:
+  ./client <server_ip> 2728
+
+Example:
+  ./client 127.0.0.1 2728
+
+Client Commands
+---------------
+- Locate current position on a road:
+  locatie <road_name>
+
+- Insert a new road into the database:
+  insert_drum <road_name> <road_type>
+
+  Available road types:
+  - autostrada
+  - drum
+  - oras
+
+- Exit the application:
+  exit
+
+Database Structure
+------------------
+Table: Drumuri
+
+| Field                         | Type           | Description                                  |
+|-------------------------------|----------------|----------------------------------------------|
+| Name                          | TEXT (Primary) | Road name                                    |
+| Type                          | TEXT           | Road type (autostrada, drum, oras)           |
+| Neighbours                    | TEXT           | Neighbor roads (space-separated)             |
+| IntersectionPointNeighbour    | TEXT           | Intersection points (space-separated integers)|
+| NeighbourNumber               | INTEGER        | Number of neighbors                          |
+| TotalKms                      | INTEGER        | Total length of the road (km)                |
+| GasStation                    | INTEGER        | Location of gas station (km marker)          |
+| Crashes                       | INTEGER        | Number of crashes recorded                   |
+| Weather                       | TEXT           | Current weather condition                    |
+
+Contact
+-------
+For additional information or support, please contact the project maintainer.
