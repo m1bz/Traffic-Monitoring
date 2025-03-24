@@ -1,39 +1,39 @@
-# Wish GPS Client-Server Simulation
+GPS Client-Server Simulation
 
 This project implements a client-server system for simulating a GPS-based road management application. The server maintains a SQLite database containing information about roads, their characteristics, and connections. Clients can connect to the server to query their location, add new roads, and interact through defined commands.
 
-## 🚀 Overview
+ Overview
 
-- **Server**:
+  Server:
   - Handles multiple concurrent client connections using multithreading.
   - Stores data in an SQLite database (`trafic.db`).
   - Manages road networks, weather conditions, intersections, and additional road properties.
 
-- **Client**:
+  Client:
   - Connects to the server via TCP sockets.
   - Sends commands to interact with the road network database.
   - Receives real-time updates and responses from the server asynchronously.
 
-## 🛠️ Technologies Used
+  Technologies Used
 
-- **Programming Language**: C
-- **Database**: SQLite
-- **Networking**: POSIX sockets (TCP)
-- **Concurrency**: pthreads (multithreading)
+- Programming Language: C
+- Database: SQLite
+- Networking: POSIX sockets (TCP)
+- Concurrency: pthreads (multithreading)
 
-## 📁 Project Structure
+  Project Structure
 
-```
+
 project-root/
 ├── client.c       # Client-side code for user interaction and communication
 ├── server.c       # Server-side code for handling client requests
 ├── trafic.db      # SQLite database storing road and client data
 └── Makefile       # Compilation instructions
-```
 
-## 📌 Features
 
-### Server Features
+  Features
+
+  Server Features
 
 - Maintains road network details, including:
   - Road type (highway, road, city street)
@@ -42,7 +42,7 @@ project-root/
 - Dynamically updates road connections and intersection points.
 - Allows new roads to be added with automatic connection handling.
 
-### Client Features
+  Client Features
 
 - User-friendly command-based interaction:
   - `locatie <road_name>`: Checks if a road exists in the database.
@@ -50,65 +50,11 @@ project-root/
   - `exit`: Closes the connection gracefully.
 - Asynchronous handling of server messages using threads.
 
-## ⚙️ Getting Started
 
-### 📌 Prerequisites
 
-- GCC Compiler
-- SQLite3
+  Database Schema
 
-### 📥 Installation
-
-Clone the repository and compile:
-
-```bash
-git clone <repository-url>
-cd project-root
-make
-```
-
-### ▶️ Running the Server
-
-Run the server with:
-
-```bash
-./server
-```
-
-### ▶️ Running the Client
-
-Run the client by providing the server IP address and port number:
-
-```bash
-./client <server_address> <port>
-```
-
-Example:
-
-```bash
-./client 127.0.0.1 2728
-```
-
-## 🔧 Commands Usage
-
-- **Check location:**
-  ```bash
-  locatie MainStreet
-  ```
-
-- **Insert new road:**
-  ```bash
-  insert_drum Highway99 autostrada
-  ```
-
-- **Exit client:**
-  ```bash
-  exit
-  ```
-
-## 📊 Database Schema
-
-### Drumuri (Roads)
+  Drumuri (Roads)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -122,7 +68,7 @@ Example:
 | Crashes | INTEGER | Number of accidents recorded |
 | Weather | TEXT | Current weather condition |
 
-### Clienti (Clients)
+  Clienti (Clients)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -131,10 +77,3 @@ Example:
 | LocationKm | INTEGER | Kilometer marker location of the client |
 | Speed | INTEGER | Speed of the client vehicle |
 
-## 🤝 Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request to improve the project.
-
-## 📜 License
-
-This project is open-source under the MIT License.
